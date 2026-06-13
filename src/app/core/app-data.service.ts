@@ -7,6 +7,8 @@ import { AppDocument, BillingDocument, BillingPreview, BillingSessionLine, Follo
 const STORAGE_KEY = 'etude-reussie-frontend-state-v3';
 const CURRENT_USER_KEY = 'etude-reussie-current-user-id';
 const API_BASE_URL = '/api';
+const IMPERSONATOR_USER_KEY = 'etude-reussie-impersonator-user-id';
+const IMPERSONATION_RETURN_URL_KEY = 'etude-reussie-impersonation-return-url';
 
 @Injectable({ providedIn: 'root' })
 export class AppDataService {
@@ -1118,4 +1120,87 @@ getBillingDocumentsForTutor(tutorId: string): BillingDocument[] {
   private save(): void {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(this.state));
   }
+
+startImpersonation(targetUserId: string, returnUrl = '/admin/utilisateurs'): boolean {
+  let currentUser = this.getCurrentUser();
+  const targetUser = this.getUser(targetUserId);
+
+  if (!targetUser) {
+    alert("Utilisateur introuvable.");
+    return false;
+  }
+
+  if (targetUser.role === 'admin' || targetUser.role === 'superuser') {
+    alert("Vous ne pouvez pas ouvrir l’espace d’un autre administrateur.");
+    return false;
+  }
+
+  if (!currentUser || (currentUser.role !== 'admin' && currentUser.role !== 'superuser')) {
+    currentUser =
+      this.state.users.find((user) => user.role === 'admin') ??
+      this.state.users.find((user) => user.role === 'superuser');
+  }
+
+  if (!currentUser || (currentUser.role !== 'admin' && currentUser.role !== 'superuser')) {
+    alert("Aucun administrateur trouvé pour utiliser cette fonctionnalité.");
+    return false;
+  }
+
+  sessionStorage.setItem(IMPERSONATOR_USER_KEY, currentUser.id);
+  sessionStorage.setItem(IMPERSONATION_RETURN_URL_KEY, returnUrl);
+  sessionStorage.setItem(CURRENT_USER_KEY, targetUser.id);
+
+  return true;
+}
+
+stopImpersonation(): void {
+  const adminId = sessionStorage.getItem(IMPERSONATOR_USER_KEY);
+
+  if (adminId) {
+    sessionStorage.setItem(CURRENT_USER_KEY, adminId);
+  }
+
+  sessionStorage.removeItem(IMPERSONATOR_USER_KEY);
+  sessionStorage.removeItem(IMPERSONATION_RETURN_URL_KEY);
+}
+
+isImpersonating(): boolean {
+  return !!sessionStorage.getItem(IMPERSONATOR_USER_KEY);
+}
+
+getImpersonatedUser(): User | undefined {
+  if (!this.isImpersonating()) {
+    return undefined;
+  }
+
+  return this.getCurrentUser();
+}
+
+getImpersonationReturnUrl(): string {
+  return sessionStorage.getItem(IMPERSONATION_RETURN_URL_KEY) ?? '/admin/utilisateurs';
+}
+
+getPortalUrlForUser(user: User): string {
+  if (user.role === 'eleve') {
+    return '/eleve/tableau-de-bord';
+  }
+
+  if (user.role === 'parent') {
+    return '/parent/tableau-de-bord';
+  }
+
+  if (user.role === 'tuteur') {
+    return '/tuteur/tableau-de-bord';
+  }
+
+  if (user.role === 'admin') {
+    return '/admin/tableau-de-bord';
+  }
+
+  if (user.role === 'superuser') {
+    return '/superuser/tableau-de-bord';
+  }
+
+  return '/';
+}
 }

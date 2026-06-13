@@ -4,6 +4,7 @@ import { FormBuilder, FormsModule, ReactiveFormsModule, Validators } from '@angu
 import { AppDataService } from '../../core/app-data.service';
 import { AccountStatus, User, UserRole } from '../../core/models';
 import { StatusBadgeComponent } from '../../shared/status-badge.component';
+import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-admin-users',
@@ -69,7 +70,14 @@ import { StatusBadgeComponent } from '../../shared/status-badge.component';
 
               <td class="actions">
                 <button class="btn soft" type="button" (click)="openUserDetails(user)">Voir</button>
-
+                <button
+                  class="btn warning"
+                  type="button"
+                  *ngIf="user.role === 'eleve' || user.role === 'parent' || user.role === 'tuteur'"
+                  (click)="viewAsUser(user)"
+                >
+                  Voir comme
+                </button>
                 <button class="btn warning" type="button" (click)="setStatus(user.id, 'Suspendu')">
                   Suspendre
                 </button>
@@ -467,6 +475,15 @@ import { StatusBadgeComponent } from '../../shared/status-badge.component';
               Suspendre
             </button>
 
+            <button
+            class="btn warning"
+            type="button"
+            *ngIf="user.role === 'eleve' || user.role === 'parent' || user.role === 'tuteur'"
+            (click)="viewAsUser(user)"
+          >
+            Voir comme cet utilisateur
+          </button>
+
             <button class="btn success" type="button" (click)="setStatus(user.id, 'Actif')">
               Activer
             </button>
@@ -509,12 +526,23 @@ export class AdminUsersComponent {
 
   constructor(
     private readonly fb: FormBuilder,
-    private readonly data: AppDataService
+    private readonly data: AppDataService,
+    private readonly router: Router
   ) {}
 
   get users(): User[] {
     return this.data.users;
   }
+
+  viewAsUser(user: User): void {
+  const success = this.data.startImpersonation(user.id, '/admin/utilisateurs');
+
+  if (!success) {
+    return;
+  }
+
+  void this.router.navigateByUrl(this.data.getPortalUrlForUser(user));
+}
 
   get filteredUsers(): User[] {
     const term = this.search.toLowerCase().trim();

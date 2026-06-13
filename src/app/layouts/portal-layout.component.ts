@@ -27,24 +27,64 @@ interface NavItem {
         </div>
 
         <div class="nav-section-title">Navigation</div>
-        <a class="nav-link" *ngFor="let item of links" [routerLink]="item.path" routerLinkActive="active">
+
+        <a
+          class="nav-link"
+          *ngFor="let item of links"
+          [routerLink]="item.path"
+          routerLinkActive="active"
+        >
           <span class="icon">{{ item.icon }}</span>
           <span>{{ item.label }}</span>
         </a>
 
         <div class="nav-section-title">Démo</div>
-        <a class="nav-link" routerLink="/login"><span class="icon">↩️</span><span>Changer de rôle</span></a>
-        <button class="nav-link" style="width:100%; border:0" (click)="resetDemo()"><span class="icon">🔄</span><span>Réinitialiser</span></button>
+
+        <a class="nav-link" routerLink="/login">
+          <span class="icon">↩️</span>
+          <span>Changer de rôle</span>
+        </a>
+
+        <button class="nav-link" style="width:100%; border:0" (click)="resetDemo()">
+          <span class="icon">🔄</span>
+          <span>Réinitialiser</span>
+        </button>
       </aside>
 
       <main class="main-area">
+        <div
+          *ngIf="data.isImpersonating()"
+          style="background:#fee2e2;color:#991b1b;padding:12px 18px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #fecaca"
+        >
+          <div>
+            <strong>Mode admin :</strong>
+            vous consultez l’espace de
+            {{ data.getImpersonatedUser()?.firstName }}
+            {{ data.getImpersonatedUser()?.lastName }}.
+          </div>
+
+          <button class="btn danger" type="button" (click)="stopImpersonation()">
+            Retour admin
+          </button>
+        </div>
+
         <header class="topbar">
           <h1>{{ title }}</h1>
+
           <div class="topbar-user">
             <button class="notification-dot" title="Notifications">🔔</button>
+
             <div class="profile-chip">
-              <img *ngIf="currentUser.avatarUrl" [src]="currentUser.avatarUrl" [alt]="currentUserName" />
-              <span *ngIf="!currentUser.avatarUrl" class="avatar-fallback">{{ initials }}</span>
+              <img
+                *ngIf="currentUser.avatarUrl"
+                [src]="currentUser.avatarUrl"
+                [alt]="currentUserName"
+              />
+
+              <span *ngIf="!currentUser.avatarUrl" class="avatar-fallback">
+                {{ initials }}
+              </span>
+
               <div>
                 <strong>{{ currentUserName }}</strong>
                 <span>{{ roleLabel }}</span>
@@ -52,6 +92,7 @@ interface NavItem {
             </div>
           </div>
         </header>
+
         <section class="content">
           <router-outlet />
         </section>
@@ -76,7 +117,7 @@ export class PortalLayoutComponent implements OnInit, OnDestroy {
       { label: 'Soumettre un devoir', icon: '📤', path: '/eleve/soumettre-devoir' },
       { label: 'Documents', icon: '📁', path: '/eleve/documents' },
       { label: 'Suivis du tuteur', icon: '📝', path: '/eleve/suivis' },
-       { label: 'Factures', icon: '🧾', path: '/eleve/factures' },
+      { label: 'Factures', icon: '🧾', path: '/eleve/factures' },
       { label: 'Mon profil', icon: '👤', path: '/eleve/profil' }
     ],
     tuteur: [
@@ -116,21 +157,31 @@ export class PortalLayoutComponent implements OnInit, OnDestroy {
   constructor(
     private readonly router: Router,
     private readonly route: ActivatedRoute,
-    private readonly data: AppDataService
+    public readonly data: AppDataService
   ) {}
 
   ngOnInit(): void {
     this.role = this.route.snapshot.data['role'] as UserRole;
     this.currentUser = this.data.getDefaultUserForRole(this.role);
     this.updateTitle();
-    this.subscription = this.router.events.pipe(filter((event): event is NavigationEnd => event instanceof NavigationEnd)).subscribe(() => this.updateTitle());
+
+    this.subscription = this.router.events
+      .pipe(filter((event): event is NavigationEnd => event instanceof NavigationEnd))
+      .subscribe(() => {
+        this.role = this.route.snapshot.data['role'] as UserRole;
+        this.currentUser = this.data.getDefaultUserForRole(this.role);
+        this.updateTitle();
+      });
   }
 
   ngOnDestroy(): void {
     this.subscription?.unsubscribe();
   }
 
-  get links(): NavItem[] { return this.navItems[this.role]; }
+  get links(): NavItem[] {
+    return this.navItems[this.role];
+  }
+
   get roleLabel(): string {
     if (this.role === 'superuser') return 'super user';
     if (this.role === 'eleve') return 'élève';
@@ -138,8 +189,22 @@ export class PortalLayoutComponent implements OnInit, OnDestroy {
     if (this.role === 'parent') return 'parent';
     return 'administrateur';
   }
-  get currentUserName(): string { return `${this.currentUser.firstName} ${this.currentUser.lastName}`; }
-  get initials(): string { return `${this.currentUser.firstName[0] ?? ''}${this.currentUser.lastName[0] ?? ''}`.toUpperCase(); }
+
+  get currentUserName(): string {
+    return `${this.currentUser.firstName} ${this.currentUser.lastName}`;
+  }
+
+  get initials(): string {
+    return `${this.currentUser.firstName[0] ?? ''}${this.currentUser.lastName[0] ?? ''}`.toUpperCase();
+  }
+
+  stopImpersonation(): void {
+    const returnUrl = this.data.getImpersonationReturnUrl();
+
+    this.data.stopImpersonation();
+
+    void this.router.navigateByUrl(returnUrl);
+  }
 
   resetDemo(): void {
     this.data.resetDemo();
@@ -148,7 +213,11 @@ export class PortalLayoutComponent implements OnInit, OnDestroy {
 
   private updateTitle(): void {
     let child = this.route.firstChild;
-    while (child?.firstChild) child = child.firstChild;
+
+    while (child?.firstChild) {
+      child = child.firstChild;
+    }
+
     this.title = child?.snapshot.data['title'] ?? 'Tableau de bord';
   }
 }
