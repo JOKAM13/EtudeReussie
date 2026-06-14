@@ -21,16 +21,35 @@ export class AppDataService {
     await this.reloadFromBackend();
   }
 
-  async login(email: string, password: string): Promise<User | undefined> {
-    try {
-      const response = await firstValueFrom(this.http.post<{ token: string; user: User }>(`${API_BASE_URL}/auth/login`, { email, password }));
-      sessionStorage.setItem(CURRENT_USER_KEY, response.user.id);
-      await this.reloadFromBackend();
-      return this.getUser(response.user.id) ?? response.user;
-    } catch {
-      return undefined;
-    }
+async login(email: string, password: string): Promise<User | undefined> {
+  try {
+    const response = await firstValueFrom(
+      this.http.post<{ token: string; user: User }>(
+        `${API_BASE_URL}/auth/login`,
+        { email, password }
+      )
+    );
+
+    sessionStorage.removeItem(IMPERSONATOR_USER_KEY);
+    sessionStorage.removeItem(IMPERSONATION_RETURN_URL_KEY);
+
+    sessionStorage.setItem(CURRENT_USER_KEY, response.user.id);
+
+    await this.reloadFromBackend();
+
+    this.upsertUser(response.user);
+    this.save();
+
+    sessionStorage.setItem(CURRENT_USER_KEY, response.user.id);
+
+    console.log('Utilisateur connecté frontend :', response.user);
+
+    return response.user;
+  } catch (error) {
+    console.error('Erreur login frontend', error);
+    return undefined;
   }
+}
 
   get users(): User[] { return this.state.users; }
   get requests(): TutorRequest[] { return this.state.requests; }
@@ -113,10 +132,16 @@ getParent(): User {
 }
 
 getDefaultUserForRole(role: UserRole): User {
-  const currentUser = this.getCurrentUserForRole(role);
+  const currentUser = this.getCurrentUser();
 
   if (currentUser) {
-    return currentUser;
+    if (currentUser.role === role) {
+      return currentUser;
+    }
+
+    console.warn(
+      `Utilisateur connecté différent de la route. Connecté=${currentUser.role}, Route=${role}`
+    );
   }
 
   if (role === 'superuser') {
@@ -137,7 +162,6 @@ getDefaultUserForRole(role: UserRole): User {
 
   return this.getStudent();
 }
-
   getParentForStudent(studentId: string): User | undefined {
     const student = this.getUser(studentId);
     return student?.parentId ? this.getUser(student.parentId) : undefined;
@@ -1219,6 +1243,26 @@ getBillingDocumentsForTutor(tutorId: string): BillingDocument[] {
       avatarUrl: user.avatarUrl
     };
   }
+
+  private upsertUser(user: User): void {
+  const index = this.state.users.findIndex((item) => item.id === user.id);
+
+  if (index >= 0) {
+    this.state.users[index] = user;
+    return;
+  }
+
+  const sameEmailIndex = this.state.users.findIndex((item) => {
+    return item.email.toLowerCase() === user.email.toLowerCase();
+  });
+
+  if (sameEmailIndex >= 0) {
+    this.state.users[sameEmailIndex] = user;
+    return;
+  }
+
+  this.state.users.unshift(user);
+}
 
   private loadState(): AppState {
     const raw = localStorage.getItem(STORAGE_KEY);

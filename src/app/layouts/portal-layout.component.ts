@@ -103,7 +103,7 @@ interface NavItem {
 export class PortalLayoutComponent implements OnInit, OnDestroy {
   title = 'Tableau de bord';
   role: UserRole = 'eleve';
-  currentUser: User = this.data.getStudent();
+ currentUser!: User;
   private subscription?: Subscription;
 
   readonly navItems: Record<UserRole, NavItem[]> = {
@@ -161,19 +161,30 @@ export class PortalLayoutComponent implements OnInit, OnDestroy {
     public readonly data: AppDataService
   ) {}
 
-  ngOnInit(): void {
-    this.role = this.route.snapshot.data['role'] as UserRole;
-    this.currentUser = this.data.getDefaultUserForRole(this.role);
-    this.updateTitle();
+ngOnInit(): void {
+  this.refreshCurrentUser();
+  this.updateTitle();
 
-    this.subscription = this.router.events
-      .pipe(filter((event): event is NavigationEnd => event instanceof NavigationEnd))
-      .subscribe(() => {
-        this.role = this.route.snapshot.data['role'] as UserRole;
-        this.currentUser = this.data.getDefaultUserForRole(this.role);
-        this.updateTitle();
-      });
+  this.subscription = this.router.events
+    .pipe(filter((event): event is NavigationEnd => event instanceof NavigationEnd))
+    .subscribe(() => {
+      this.refreshCurrentUser();
+      this.updateTitle();
+    });
+}
+
+private refreshCurrentUser(): void {
+  this.role = this.route.snapshot.data['role'] as UserRole;
+
+  const connectedUser = this.data.getCurrentUser();
+
+  if (connectedUser && connectedUser.role === this.role) {
+    this.currentUser = connectedUser;
+    return;
   }
+
+  this.currentUser = this.data.getDefaultUserForRole(this.role);
+}
 
   ngOnDestroy(): void {
     this.subscription?.unsubscribe();
