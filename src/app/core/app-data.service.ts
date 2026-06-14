@@ -1,8 +1,8 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import { AppState, initialState } from './mock-data';
-import { AppDocument, BillingDocument, BillingPreview, BillingSessionLine, FollowUp, Homework, Payment, PaymentStatus, RequestStatus, Session, SessionStatus, TutorRequest, User, UserRole } from './models';
+import { AppDocument, BillingDocument, BillingPreview, BillingSessionLine, FollowUp, Homework, Payment, PaymentStatus, RequestStatus, Session, SessionStatus, TutorRequest, User, UserRole,ActivityLog,ActivityLogFilters, CreateActivityLogPayload} from './models';
+import { HttpClient, HttpParams } from '@angular/common/http';
 
 const STORAGE_KEY = 'etude-reussie-frontend-state-v3';
 const CURRENT_USER_KEY = 'etude-reussie-current-user-id';
@@ -302,6 +302,15 @@ getDefaultUserForRole(role: UserRole): User {
     if (user) {
       user.status = status;
       this.save();
+
+          void this.recordActivity({
+      actionType: 'STATUS_CHANGE',
+      module: 'USERS',
+      targetUserId: user.id,
+      targetName: `${user.firstName} ${user.lastName}`,
+      description: `Statut du compte modifié : ${user.firstName} ${user.lastName} est maintenant ${status}.`
+    });
+
       void this.patchAndReload(`/users/${userId}/status`, { status });
     }
   }
@@ -317,6 +326,14 @@ getDefaultUserForRole(role: UserRole): User {
     alert('Le super user ne peut pas être supprimé depuis l’espace admin.');
     return;
   }
+
+    void this.recordActivity({
+    actionType: 'DELETE',
+    module: 'USERS',
+    targetUserId: user.id,
+    targetName: `${user.firstName} ${user.lastName}`,
+    description: `Compte supprimé : ${user.firstName} ${user.lastName} (${user.email}) - rôle : ${user.role}.`
+  });
 
   this.state.users = this.state.users
     .filter((item) => item.id !== userId)
@@ -396,6 +413,14 @@ getDefaultUserForRole(role: UserRole): User {
     if (request) {
       request.status = status;
       this.save();
+
+        void this.recordActivity({
+        actionType: 'STATUS_CHANGE',
+        module: 'ADMIN',
+        targetName: request.studentName,
+        description: `Statut de la demande modifié : ${request.studentName} - ${request.subject} est maintenant ${status}.`
+      });
+
       void this.patchAndReload(`/requests/${requestId}/status`, { status });
     }
   }
@@ -437,6 +462,15 @@ getDefaultUserForRole(role: UserRole): User {
       });
     }
     this.save();
+
+    void this.recordActivity({
+    actionType: 'UPDATE',
+    module: 'ADMIN',
+    targetUserId: tutor.id,
+    targetName: request.studentName,
+    description: `Demande assignée : ${request.studentName} (${request.subject}) a été assigné au tuteur ${tutor.firstName} ${tutor.lastName}.`
+  });
+
     void this.postAndReload(`/requests/${requestId}/assign`, { tutorId });
   }
 
@@ -493,6 +527,21 @@ getDefaultUserForRole(role: UserRole): User {
     );
 
     await this.reloadFromBackend();
+
+     await this.recordActivity({
+      actionType: 'CREATE',
+      module: 'SESSIONS',
+      targetUserId: request.studentId,
+      targetName: this.getDisplayName(request.studentId),
+      description: `Séance créée pour ${this.getDisplayName(request.studentId)} avec ${this.getDisplayName(request.tutorId)} en ${request.subject}, le ${request.date} de ${request.startTime} à ${request.endTime}.`
+    });
+      void this.recordActivity({
+    actionType: 'CREATE',
+    module: 'SESSIONS',
+    targetUserId: request.studentId,
+    targetName: this.getDisplayName(request.studentId),
+    description: `Séance créée en ${request.subject} le ${request.date} de ${request.startTime} à ${request.endTime}.`
+  });
     return created;
   } catch (error: any) {
     console.error('Erreur création séance en BD', error);
@@ -515,6 +564,12 @@ async updateSessionStatus(sessionId: string, status: SessionStatus): Promise<voi
     );
 
     await this.reloadFromBackend();
+    void this.recordActivity({
+    actionType: 'STATUS_CHANGE',
+    module: 'SESSIONS',
+    targetName: sessionId,
+    description: `Statut de la séance modifié : ${status}.`
+  });
   } catch (error: any) {
     console.error('Erreur modification statut séance en BD', error);
     console.error('Détail backend :', error?.error);
@@ -549,6 +604,14 @@ async updateSession(session: Session): Promise<void> {
     );
 
     await this.reloadFromBackend();
+
+    void this.recordActivity({
+      actionType: 'UPDATE',
+      module: 'SESSIONS',
+      targetUserId: session.studentId,
+      targetName: this.getDisplayName(session.studentId),
+      description: `Séance modifiée : ${session.subject} le ${session.date} de ${session.startTime} à ${session.endTime}.`
+    });
   } catch (error: any) {
     console.error('Erreur modification séance en BD', error);
     console.error('Détail backend :', error?.error);
@@ -624,6 +687,14 @@ private normalizeTime(value: string): string {
     );
 
     await this.reloadFromBackend();
+
+        void this.recordActivity({
+      actionType: 'CREATE',
+      module: 'HOMEWORK',
+      targetUserId: payload.studentId,
+      targetName: this.getDisplayName(payload.studentId),
+      description: `Devoir envoyé à ${this.getDisplayName(payload.studentId)} : ${payload.title} (${payload.subject}).`
+    });
     return created;
   } catch (error) {
     console.error('Erreur upload devoir', error);
@@ -651,6 +722,17 @@ async returnCorrectedHomeworkWithFiles(
     );
 
     await this.reloadFromBackend();
+
+    const homework = this.state.homework.find((item) => item.id === homeworkId);
+
+    void this.recordActivity({
+      actionType: 'UPDATE',
+      module: 'HOMEWORK',
+      targetUserId: homework?.studentId,
+      targetName: homework ? this.getDisplayName(homework.studentId) : homeworkId,
+      description: `Correction déposée pour le devoir : ${homework?.title ?? homeworkId}.`
+    });
+
     return updated;
   } catch (error) {
     console.error('Erreur dépôt correction', error);
@@ -810,6 +892,14 @@ deleteAllDocuments(): void {
     const created: Payment = { ...payload, id: `payment-${Date.now()}` };
     this.state.payments.unshift(created);
     this.save();
+
+      void this.recordActivity({
+      actionType: 'CREATE',
+      module: 'PAYMENTS',
+      targetName: created.userEmail,
+      description: `Paiement ajouté : ${created.amount} $ pour ${created.userEmail} (${created.type}).`
+    });
+
     void this.postAndReload('/payments', created);
     return created;
   }
@@ -819,6 +909,14 @@ deleteAllDocuments(): void {
     if (payment) {
       payment.status = status;
       this.save();
+
+       void this.recordActivity({
+      actionType: 'STATUS_CHANGE',
+      module: 'PAYMENTS',
+      targetName: payment.userEmail,
+      description: `Statut du paiement modifié : ${payment.amount} $ pour ${payment.userEmail} est maintenant ${status}.`
+    });
+    
       void this.patchAndReload(`/payments/${paymentId}/status`, { status });
     }
   }
@@ -947,6 +1045,13 @@ async generateBillingDocuments(
   if (document) {
     document.status = 'Soumis';
     document.submittedAt = new Date().toISOString().slice(0, 10);
+    void this.recordActivity({
+      actionType: 'SUBMIT',
+      module: 'BILLING',
+      targetUserId: document.recipientId,
+      targetName: document.recipientEmail,
+      description: `${document.kind} soumis à ${document.recipientEmail} pour la période ${document.period}.`
+    });
     this.save();
 
     void this.postAndReload(`/billing-documents/${documentId}/submit`, {});
@@ -977,7 +1082,16 @@ updateBillingDocument(
 deleteBillingDocument(documentId: string): void {
   this.state.billingDocuments = (this.state.billingDocuments ?? []).filter((document) => {
     return document.id !== documentId;
+  });if (document) {
+  void this.recordActivity({
+    actionType: 'DELETE',
+    module: 'DOCUMENTS',
+    targetName: document.title,
+     description: `Document supprimé : ${document.title}.`
   });
+}
+
+
 
   this.save();
 
@@ -1146,6 +1260,14 @@ startImpersonation(targetUserId: string, returnUrl = '/admin/utilisateurs'): boo
     return false;
   }
 
+  void this.recordActivity({
+  actionType: 'IMPERSONATE',
+  module: 'USERS',
+  targetUserId: targetUser.id,
+  targetName: `${targetUser.firstName} ${targetUser.lastName}`,
+  description: `${currentUser.firstName} ${currentUser.lastName} a consulté l’espace de ${targetUser.firstName} ${targetUser.lastName}.`
+});
+
   sessionStorage.setItem(IMPERSONATOR_USER_KEY, currentUser.id);
   sessionStorage.setItem(IMPERSONATION_RETURN_URL_KEY, returnUrl);
   sessionStorage.setItem(CURRENT_USER_KEY, targetUser.id);
@@ -1202,5 +1324,102 @@ getPortalUrlForUser(user: User): string {
   }
 
   return '/';
+}
+
+async getActivityLogs(filters: ActivityLogFilters = {}): Promise<ActivityLog[]> {
+  let params = new HttpParams();
+
+  if (filters.startDate) {
+    params = params.set('startDate', filters.startDate);
+  }
+
+  if (filters.endDate) {
+    params = params.set('endDate', filters.endDate);
+  }
+
+  if (filters.actorUserId) {
+    params = params.set('actorUserId', filters.actorUserId);
+  }
+
+  if (filters.actionType) {
+    params = params.set('actionType', filters.actionType);
+  }
+
+  if (filters.module) {
+    params = params.set('module', filters.module);
+  }
+
+  if (filters.search) {
+    params = params.set('search', filters.search);
+  }
+
+  try {
+    return await firstValueFrom(
+      this.http.get<ActivityLog[]>(`${API_BASE_URL}/activity-logs`, { params })
+    );
+  } catch (error) {
+    console.error('Erreur chargement journal activité', error);
+    return [];
+  }
+}
+
+async recordActivity(payload: Omit<CreateActivityLogPayload, 'actorUserId' | 'actorName' | 'actorRole'>): Promise<void> {
+  const currentUser = this.getCurrentUser();
+
+  const body: CreateActivityLogPayload = {
+    actorUserId: currentUser?.id,
+    actorName: currentUser ? `${currentUser.firstName} ${currentUser.lastName}` : 'Système',
+    actorRole: currentUser?.role ?? 'system',
+    actionType: payload.actionType,
+    module: payload.module,
+    targetUserId: payload.targetUserId,
+    targetName: payload.targetName,
+    description: payload.description
+  };
+
+  try {
+    await firstValueFrom(
+      this.http.post<ActivityLog>(`${API_BASE_URL}/activity-logs`, body)
+    );
+  } catch (error) {
+    console.error('Erreur écriture journal activité', error);
+  }
+}
+
+async forgotPassword(email: string): Promise<boolean> {
+  try {
+    await firstValueFrom(
+      this.http.post(`${API_BASE_URL}/auth/forgot-password`, { email })
+    );
+
+    return true;
+  } catch (error: any) {
+    console.error('Erreur mot de passe oublié', error);
+    return false;
+  }
+}
+
+async resetPassword(token: string, newPassword: string, confirmPassword: string): Promise<boolean> {
+  try {
+    await firstValueFrom(
+      this.http.post(`${API_BASE_URL}/auth/reset-password`, {
+        token,
+        newPassword,
+        confirmPassword
+      })
+    );
+
+    return true;
+  } catch (error: any) {
+    console.error('Erreur réinitialisation mot de passe', error);
+
+    const message =
+      error?.error?.message ??
+      "Impossible de réinitialiser le mot de passe.";
+
+    alert(message);
+
+    return false;
+  }
 }
 }

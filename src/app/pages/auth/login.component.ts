@@ -40,6 +40,9 @@ import { UserRole } from '../../core/models';
           </div>
           <p class="error" *ngIf="errorMessage">{{ errorMessage }}</p>
           <button class="btn primary auth-submit" type="submit">Sign in with Email</button>
+          <p style="margin-top: 14px; text-align: center">
+          <a routerLink="/mot-de-passe-oublie">Mot de passe oublié ?</a>
+        </p>
         </form>
 
         <div class="login-roles compact">

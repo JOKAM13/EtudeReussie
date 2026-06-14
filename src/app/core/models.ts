@@ -196,3 +196,56 @@ export interface BillingSessionLine {
   tutorAmount: number;
   parentAmount: number;
 }
+
+export type ActivityActionType =
+  | 'CREATE'
+  | 'UPDATE'
+  | 'DELETE'
+  | 'VIEW'
+  | 'SUBMIT'
+  | 'DOWNLOAD'
+  | 'STATUS_CHANGE'
+  | 'IMPERSONATE';
+
+export type ActivityModule =
+  | 'USERS'
+  | 'BILLING'
+  | 'DOCUMENTS'
+  | 'SESSIONS'
+  | 'HOMEWORK'
+  | 'FOLLOWUPS'
+  | 'PAYMENTS'
+  | 'ADMIN';
+
+export interface ActivityLog {
+  id: string;
+  actorUserId?: string;
+  actorName: string;
+  actorRole: string;
+  actionType: ActivityActionType;
+  module: ActivityModule;
+  targetUserId?: string;
+  targetName: string;
+  description: string;
+  createdAt: string;
+}
+
+export interface CreateActivityLogPayload {
+  actorUserId?: string;
+  actorName: string;
+  actorRole: string;
+  actionType: ActivityActionType;
+  module: ActivityModule;
+  targetUserId?: string;
+  targetName: string;
+  description: string;
+}
+
+export interface ActivityLogFilters {
+  startDate?: string;
+  endDate?: string;
+  actorUserId?: string;
+  actionType?: string;
+  module?: string;
+  search?: string;
+}

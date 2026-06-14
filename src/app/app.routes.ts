@@ -36,10 +36,15 @@ import { ParentProfileComponent } from './pages/parent/parent-profile.component'
 import { SuperUserUsersComponent } from './pages/superuser/super-user-users.component';
 import { StudentInvoicesComponent } from './pages/student/student-invoices.component';
 import { TutorInvoicesComponent } from './pages/tutor/tutor-invoices.component';
+import { AdminActivityLogComponent } from './pages/admin/admin-activity-log.component';
+import { ForgotPasswordComponent } from './pages/auth/forgot-password.component';
+import { ResetPasswordComponent } from './pages/auth/reset-password.component';
 
 export const routes: Routes = [
   { path: '', redirectTo: 'login', pathMatch: 'full' },
   { path: 'login', component: LoginComponent, data: { title: 'Connexion' } },
+  { path: 'mot-de-passe-oublie', component: ForgotPasswordComponent, data: { title: 'Mot de passe oublié' } },
+  { path: 'reinitialiser-mot-de-passe', component: ResetPasswordComponent, data: { title: 'Réinitialiser le mot de passe' } },
   {
     path: 'super-user',
     component: PortalLayoutComponent,
@@ -112,7 +117,9 @@ export const routes: Routes = [
       { path: 'seances', component: AdminSessionsComponent, data: { title: 'Séances' } },
       { path: 'suivis', component: AdminFollowupsComponent, data: { title: 'Suivis parents' } },
       { path: 'documents', component: AdminDocumentsComponent, data: { title: 'Documents' } },
-      { path: 'paiements', component: AdminPaymentsComponent, data: { title: 'Paiements' } }
+      { path: 'paiements', component: AdminPaymentsComponent, data: { title: 'Paiements' } },
+      { path: 'journal', component: AdminActivityLogComponent, data: { title: 'Journal d’activité' } },
+      { path: 'journal', component: AdminActivityLogComponent, data: { title: 'Journal d’activité' } }
     ]
   },
   { path: '**', redirectTo: 'login' }

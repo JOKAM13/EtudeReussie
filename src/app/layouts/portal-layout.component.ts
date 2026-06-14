@@ -140,7 +140,8 @@ export class PortalLayoutComponent implements OnInit, OnDestroy {
       { label: 'Séances', icon: '📅', path: '/admin/seances' },
       { label: 'Suivis', icon: '📝', path: '/admin/suivis' },
       { label: 'Documents', icon: '📁', path: '/admin/documents' },
-      { label: 'Paiements', icon: '💳', path: '/admin/paiements' }
+      { label: 'Paiements', icon: '💳', path: '/admin/paiements' },
+      { label: 'Journal d’activité', icon: '📜', path: '/admin/journal' }
     ],
     parent: [
       { label: 'Tableau de bord', icon: '🏠', path: '/parent/tableau-de-bord' },
