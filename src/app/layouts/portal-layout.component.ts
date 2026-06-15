@@ -38,13 +38,6 @@ interface NavItem {
           <span>{{ item.label }}</span>
         </a>
 
-        <div class="nav-section-title">Démo</div>
-
-        <a class="nav-link" routerLink="/login">
-          <span class="icon">↩️</span>
-          <span>Changer de rôle</span>
-        </a>
-
         <button class="nav-link" style="width:100%; border:0" (click)="resetDemo()">
           <span class="icon">🔄</span>
           <span>Réinitialiser</span>
