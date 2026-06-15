@@ -1136,20 +1136,33 @@ getBillingDocumentsForParent(parentId: string): BillingDocument[] {
 
 getBillingDocumentsForStudent(studentId: string): BillingDocument[] {
   const student = this.getUser(studentId);
+  const parentId = student?.parentId;
+  const parentEmail = parentId ? this.getUser(parentId)?.email : undefined;
 
   return this.billingDocuments.filter((doc) => {
     if (doc.kind !== 'Facture parent') {
       return false;
     }
 
-    const sameStudent = doc.studentId === studentId;
+    const isSubmitted = doc.status === 'Soumis';
 
-    const sameParent =
-      !!student?.parentId &&
-      doc.recipientId === student.parentId &&
-      doc.studentId === studentId;
+    const invoiceDirectlyLinkedToStudent = doc.studentId === studentId;
 
-    return sameStudent || sameParent;
+    const invoiceLinkedToParent =
+      !!parentId &&
+      doc.recipientId === parentId &&
+      (!doc.studentId || doc.studentId === studentId);
+
+    const invoiceLinkedToParentEmail =
+      !!parentEmail &&
+      doc.recipientEmail?.toLowerCase() === parentEmail.toLowerCase() &&
+      (!doc.studentId || doc.studentId === studentId);
+
+    return isSubmitted && (
+      invoiceDirectlyLinkedToStudent ||
+      invoiceLinkedToParent ||
+      invoiceLinkedToParentEmail
+    );
   });
 }
 
