@@ -14,6 +14,20 @@ import { Router } from '@angular/router';
     <div class="page-intro">
       <div>
         <h2>Gestion des utilisateurs</h2>
+
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin:14px 0 18px">
+          <button class="btn secondary" type="button" (click)="exportUsersByRole('eleve')">
+            Exporter les élèves
+          </button>
+
+          <button class="btn secondary" type="button" (click)="exportUsersByRole('tuteur')">
+            Exporter les tuteurs
+          </button>
+
+          <button class="btn secondary" type="button" (click)="exportUsersByRole('parent')">
+            Exporter les parents
+          </button>
+        </div>
         <p>Recherchez, filtrez, créez, consultez et supprimez les comptes admin, tuteurs, élèves et parents.</p>
       </div>
 
@@ -714,4 +728,201 @@ removeParentFromStudent(student: User): void {
   childrenOfParent(parentId: string): User[] {
     return this.data.getChildrenForParent(parentId);
   }
+
+  exportUsersByRole(role: UserRole): void {
+  const users = this.data.getUsersByRole(role);
+
+  if (!users.length) {
+    alert('Aucun utilisateur à exporter.');
+    return;
+  }
+
+  const columns = this.getExportColumns(role);
+
+  const header = columns.map((column) => this.escapeCsvValue(column.header)).join(';');
+
+  const rows = users.map((user) => {
+    return columns
+      .map((column) => this.escapeCsvValue(column.value(user)))
+      .join(';');
+  });
+
+  const csvContent = '\ufeff' + [header, ...rows].join('\n');
+
+  const blob = new Blob([csvContent], {
+    type: 'text/csv;charset=utf-8;'
+  });
+
+  const url = window.URL.createObjectURL(blob);
+  const link = document.createElement('a');
+
+  link.href = url;
+  link.download = this.getExportFileName(role);
+  link.click();
+
+  window.URL.revokeObjectURL(url);
+}
+
+private getExportColumns(role: UserRole): { header: string; value: (user: User) => string }[] {
+  const baseColumns = [
+    {
+      header: 'Prénom',
+      value: (user: User) => user.firstName ?? ''
+    },
+    {
+      header: 'Nom',
+      value: (user: User) => user.lastName ?? ''
+    },
+    {
+      header: 'Email',
+      value: (user: User) => user.email ?? ''
+    },
+    {
+      header: 'Téléphone',
+      value: (user: User) => this.getUserField(user, 'phone')
+    },
+    {
+      header: 'Rôle',
+      value: (user: User) => user.role ?? ''
+    },
+    {
+      header: 'Statut',
+      value: (user: User) => this.getUserField(user, 'status')
+    },
+    {
+      header: 'Ville',
+      value: (user: User) => this.getUserField(user, 'city')
+    },
+    {
+      header: 'Date de création',
+      value: (user: User) => this.getUserField(user, 'createdAt')
+    }
+  ];
+
+  if (role === 'eleve') {
+    return [
+      ...baseColumns,
+      {
+        header: 'Niveau',
+        value: (user: User) => this.getUserField(user, 'grade') || this.getUserField(user, 'level')
+      },
+      {
+        header: 'École',
+        value: (user: User) => this.getUserField(user, 'school')
+      },
+      {
+        header: 'Parent',
+        value: (user: User) => {
+          const parentId = this.getUserField(user, 'parentId');
+          return parentId ? this.data.getDisplayName(parentId) : '';
+        }
+      }
+    ];
+  }
+
+  if (role === 'tuteur') {
+    return [
+      ...baseColumns,
+      {
+        header: 'Matières',
+        value: (user: User) => this.formatListValue(this.getRawUserField(user, 'subjects'))
+      },
+      {
+        header: 'Niveaux enseignés',
+        value: (user: User) => this.formatListValue(this.getRawUserField(user, 'levels'))
+      },
+      {
+        header: 'Mode',
+        value: (user: User) => this.getUserField(user, 'mode')
+      },
+      {
+        header: 'Disponibilités',
+        value: (user: User) => this.formatListValue(this.getRawUserField(user, 'availability'))
+      }
+    ];
+  }
+
+  if (role === 'parent') {
+    return [
+      ...baseColumns,
+      {
+        header: 'Nombre d’enfants',
+        value: (user: User) => {
+          const children = this.data.getUsersByRole('eleve').filter((student) => {
+            return this.getUserField(student, 'parentId') === user.id;
+          });
+
+          return children.length.toString();
+        }
+      },
+      {
+        header: 'Enfants',
+        value: (user: User) => {
+          const children = this.data.getUsersByRole('eleve').filter((student) => {
+            return this.getUserField(student, 'parentId') === user.id;
+          });
+
+          return children
+            .map((student) => `${student.firstName} ${student.lastName}`)
+            .join(', ');
+        }
+      }
+    ];
+  }
+
+  return baseColumns;
+}
+
+private getExportFileName(role: UserRole): string {
+  const today = new Date().toISOString().slice(0, 10);
+
+  if (role === 'eleve') {
+    return `etude-reussie-eleves-${today}.csv`;
+  }
+
+  if (role === 'tuteur') {
+    return `etude-reussie-tuteurs-${today}.csv`;
+  }
+
+  if (role === 'parent') {
+    return `etude-reussie-parents-${today}.csv`;
+  }
+
+  return `etude-reussie-utilisateurs-${today}.csv`;
+}
+
+private getUserField(user: User, fieldName: string): string {
+  const value = this.getRawUserField(user, fieldName);
+
+  if (value === null || value === undefined) {
+    return '';
+  }
+
+  if (Array.isArray(value)) {
+    return value.join(', ');
+  }
+
+  return String(value);
+}
+
+private getRawUserField(user: User, fieldName: string): unknown {
+  return (user as unknown as Record<string, unknown>)[fieldName];
+}
+
+private formatListValue(value: unknown): string {
+  if (Array.isArray(value)) {
+    return value.join(', ');
+  }
+
+  if (value === null || value === undefined) {
+    return '';
+  }
+
+  return String(value);
+}
+
+private escapeCsvValue(value: string): string {
+  const safeValue = value.replace(/"/g, '""');
+  return `"${safeValue}"`;
+}
 }
