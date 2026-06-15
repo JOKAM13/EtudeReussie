@@ -9,7 +9,16 @@ const CURRENT_USER_KEY = 'etude-reussie-current-user-id';
 const API_BASE_URL = '/api';
 const IMPERSONATOR_USER_KEY = 'etude-reussie-impersonator-user-id';
 const IMPERSONATION_RETURN_URL_KEY = 'etude-reussie-impersonation-return-url';
-
+const emptyState: AppState = {
+  users: [],
+  requests: [],
+  sessions: [],
+  homework: [],
+  documents: [],
+  followUps: [],
+  payments: [],
+  billingDocuments: []
+};
 @Injectable({ providedIn: 'root' })
 export class AppDataService {
   private state: AppState = this.loadState();
@@ -102,66 +111,41 @@ private getCurrentUserForRole(role: UserRole): User | undefined {
 }
 
 getSuperUser(): User {
-  return this.getCurrentUserForRole('superuser')
-    ?? this.state.users.find((user) => user.role === 'superuser')
-    ?? this.getUser('super-1') as User;
+  return this.requireCurrentUserRole('superuser');
 }
 
 getAdmin(): User {
-  return this.getCurrentUserForRole('admin')
-    ?? this.state.users.find((user) => user.role === 'admin')
-    ?? this.getUser('admin-1') as User;
+  return this.requireCurrentUserRole('admin');
 }
 
 getTutor(): User {
-  return this.getCurrentUserForRole('tuteur')
-    ?? this.state.users.find((user) => user.role === 'tuteur')
-    ?? this.getUser('tutor-1') as User;
+  return this.requireCurrentUserRole('tuteur');
 }
 
 getStudent(): User {
-  return this.getCurrentUserForRole('eleve')
-    ?? this.state.users.find((user) => user.role === 'eleve')
-    ?? this.getUser('student-1') as User;
+  return this.requireCurrentUserRole('eleve');
 }
 
 getParent(): User {
-  return this.getCurrentUserForRole('parent')
-    ?? this.state.users.find((user) => user.role === 'parent')
-    ?? this.getUser('parent-1') as User;
+  return this.requireCurrentUserRole('parent');
 }
 
-getDefaultUserForRole(role: UserRole): User {
+private requireCurrentUserRole(role: UserRole): User {
   const currentUser = this.getCurrentUser();
 
-  if (currentUser) {
-    if (currentUser.role === role) {
-      return currentUser;
-    }
+  if (!currentUser) {
+    throw new Error(`Aucun utilisateur connecté pour le rôle ${role}.`);
+  }
 
-    console.warn(
-      `Utilisateur connecté différent de la route. Connecté=${currentUser.role}, Route=${role}`
+  if (currentUser.role !== role) {
+    throw new Error(
+      `Utilisateur connecté avec mauvais rôle. Connecté=${currentUser.role}, attendu=${role}.`
     );
   }
 
-  if (role === 'superuser') {
-    return this.getSuperUser();
-  }
-
-  if (role === 'admin') {
-    return this.getAdmin();
-  }
-
-  if (role === 'tuteur') {
-    return this.getTutor();
-  }
-
-  if (role === 'parent') {
-    return this.getParent();
-  }
-
-  return this.getStudent();
+  return currentUser;
 }
+
   getParentForStudent(studentId: string): User | undefined {
     const student = this.getUser(studentId);
     return student?.parentId ? this.getUser(student.parentId) : undefined;
@@ -1176,15 +1160,21 @@ getBillingDocumentsForTutor(tutorId: string): BillingDocument[] {
   });
 }
 
-  private async reloadFromBackend(): Promise<void> {
-    try {
-      const state = await firstValueFrom(this.http.get<AppState>(`${API_BASE_URL}/bootstrap`));
-      this.state = { ...structuredClone(initialState), ...state, billingDocuments: state.billingDocuments ?? [] };
-      this.save();
-    } catch (error) {
-      console.warn('Backend non disponible. Le frontend utilise les données locales.', error);
-    }
+ private async reloadFromBackend(): Promise<void> {
+  try {
+    const state = await firstValueFrom(this.http.get<AppState>(`${API_BASE_URL}/bootstrap`));
+
+    this.state = {
+      ...structuredClone(emptyState),
+      ...state,
+      billingDocuments: state.billingDocuments ?? []
+    };
+
+    this.save();
+  } catch (error) {
+    console.error('Backend non disponible. Impossible de charger les données réelles.', error);
   }
+}
 
   private async postAndReload(path: string, payload: unknown): Promise<void> {
     try {
@@ -1278,15 +1268,24 @@ getBillingDocumentsForTutor(tutorId: string): BillingDocument[] {
 }
 
   private loadState(): AppState {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return structuredClone(initialState);
-    try {
-      const parsed = JSON.parse(raw) as AppState;
-      return { ...structuredClone(initialState), ...parsed, billingDocuments: parsed.billingDocuments ?? [] };
-    } catch {
-      return structuredClone(initialState);
-    }
+  const raw = localStorage.getItem(STORAGE_KEY);
+
+  if (!raw) {
+    return structuredClone(emptyState);
   }
+
+  try {
+    const parsed = JSON.parse(raw) as AppState;
+
+    return {
+      ...structuredClone(emptyState),
+      ...parsed,
+      billingDocuments: parsed.billingDocuments ?? []
+    };
+  } catch {
+    return structuredClone(emptyState);
+  }
+}
 
   private save(): void {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(this.state));

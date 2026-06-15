@@ -41,14 +41,24 @@ import { StatusBadgeComponent } from '../../shared/status-badge.component';
       </section>
 
       <section class="card">
-        <h3>Mon tuteur</h3>
-        <div class="detail-panel" *ngIf="tutor; else noTutor">
-          <strong>{{ tutor.firstName }} {{ tutor.lastName }}</strong>
-          <p class="meta">{{ tutor.email }} · {{ tutor.phone }}</p>
-          <p>{{ tutor.biography }}</p>
-          <div class="actions"><span class="badge" *ngFor="let subject of tutor.subjects">{{ subject }}</span></div>
+  <h3>Mon tuteur</h3>
+
+        <div class="list" *ngIf="myTutors.length; else noTutorAssigned">
+          <div class="list-item" *ngFor="let tutor of myTutors">
+            <div>
+              <strong>{{ tutor.firstName }} {{ tutor.lastName }}</strong>
+              <p class="meta">{{ tutor.email }}</p>
+            </div>
+
+            <span class="status success">Assigné</span>
+          </div>
         </div>
-        <ng-template #noTutor><div class="empty-state">Aucun tuteur assigné pour l’instant.</div></ng-template>
+
+        <ng-template #noTutorAssigned>
+          <div class="empty-state">
+            Aucun tuteur assigné pour l’instant.
+          </div>
+        </ng-template>
       </section>
 
       <section class="card">
@@ -89,4 +99,27 @@ export class StudentDashboardComponent {
   constructor(private readonly data: AppDataService) {}
 
   tutorName(session: Session): string { return this.data.getDisplayName(session.tutorId); }
+
+  get myTutors() {
+  const currentUser = this.data.getCurrentUser();
+
+  if (!currentUser) {
+    return [];
+  }
+
+  const tutorIds = new Set(
+    this.data.sessions
+      .filter((session) => {
+        return session.studentId === currentUser.id;
+      })
+      .map((session) => session.tutorId)
+      .filter((tutorId) => !!tutorId)
+  );
+
+  return Array.from(tutorIds)
+    .map((tutorId) => this.data.getUser(tutorId))
+    .filter((user): user is NonNullable<typeof user> => {
+      return !!user && user.role === 'tuteur';
+    });
+}
 }

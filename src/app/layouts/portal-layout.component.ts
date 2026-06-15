@@ -180,12 +180,17 @@ private refreshCurrentUser(): void {
 
   const connectedUser = this.data.getCurrentUser();
 
-  if (connectedUser && connectedUser.role === this.role) {
-    this.currentUser = connectedUser;
+  if (!connectedUser) {
+    void this.router.navigateByUrl('/login');
     return;
   }
 
-  this.currentUser = this.data.getDefaultUserForRole(this.role);
+  if (connectedUser.role !== this.role) {
+    void this.router.navigateByUrl(this.data.getPortalUrlForUser(connectedUser));
+    return;
+  }
+
+  this.currentUser = connectedUser;
 }
 
   ngOnDestroy(): void {
