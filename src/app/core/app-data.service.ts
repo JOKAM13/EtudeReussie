@@ -1479,4 +1479,11 @@ async resetPassword(token: string, newPassword: string, confirmPassword: string)
     return false;
   }
 }
+
+logout(): void {
+  sessionStorage.removeItem(CURRENT_USER_KEY);
+  sessionStorage.removeItem(IMPERSONATOR_USER_KEY);
+  sessionStorage.removeItem(IMPERSONATION_RETURN_URL_KEY);
+  localStorage.removeItem('etude-reussie-admin-token');
+}
 }

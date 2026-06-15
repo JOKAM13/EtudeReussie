@@ -38,10 +38,19 @@ interface NavItem {
           <span>{{ item.label }}</span>
         </a>
 
-        <button class="nav-link" style="width:100%; border:0" (click)="resetDemo()">
-          <span class="icon">🔄</span>
-          <span>Réinitialiser</span>
+        <div style="margin-top:auto; padding-top:18px;">
+        <div class="nav-section-title">Compte</div>
+
+        <button
+          class="nav-link"
+          type="button"
+          style="width:100%; border:0; background:transparent; cursor:pointer; text-align:left;"
+          (click)="logout()"
+        >
+          <span class="icon">🚪</span>
+          <span>Se déconnecter</span>
         </button>
+      </div>
       </aside>
 
       <main class="main-area">
@@ -211,11 +220,6 @@ private refreshCurrentUser(): void {
     void this.router.navigateByUrl(returnUrl);
   }
 
-  resetDemo(): void {
-    this.data.resetDemo();
-    window.location.reload();
-  }
-
   private updateTitle(): void {
     let child = this.route.firstChild;
 
@@ -225,4 +229,9 @@ private refreshCurrentUser(): void {
 
     this.title = child?.snapshot.data['title'] ?? 'Tableau de bord';
   }
+
+  logout(): void {
+  this.data.logout();
+  void this.router.navigateByUrl('/login');
+}
 }
