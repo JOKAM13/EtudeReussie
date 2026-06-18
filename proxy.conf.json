@@ -1,6 +1,6 @@
 {
   "/api": {
-    "target": "http://localhost:64842",
+    "target": "https://api.etudereussie.ca/api",
     "secure": false,
     "changeOrigin": false,
     "logLevel": "debug"
