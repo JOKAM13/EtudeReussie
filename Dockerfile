@@ -2,10 +2,11 @@ FROM node:20-alpine AS build
 
 WORKDIR /app
 
-COPY package*.json ./
+COPY package.json package-lock.json ./
 
-RUN npm cache clean --force
-RUN npm install --legacy-peer-deps --no-audit --no-fund
+ENV NODE_ENV=development
+
+RUN npm ci --legacy-peer-deps --include=dev --no-audit --no-fund
 
 COPY . ./
 
