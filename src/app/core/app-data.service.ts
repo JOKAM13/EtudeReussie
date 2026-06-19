@@ -6,7 +6,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 
 const STORAGE_KEY = 'etude-reussie-frontend-state-v3';
 const CURRENT_USER_KEY = 'etude-reussie-current-user-id';
-const API_BASE_URL = '/https://api.etudereussie.ca/api';
+const API_BASE_URL = 'https://api.etudereussie.ca/api';
 const IMPERSONATOR_USER_KEY = 'etude-reussie-impersonator-user-id';
 const IMPERSONATION_RETURN_URL_KEY = 'etude-reussie-impersonation-return-url';
 const emptyState: AppState = {
