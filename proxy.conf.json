@@ -1,13 +1,14 @@
 {
   "/api": {
-    "target": "https://api.etudereussie.ca/api",
-    "secure": false,
-    "changeOrigin": false,
+    "target": "https://api.etudereussie.ca",
+    "secure": true,
+    "changeOrigin": true,
     "logLevel": "debug"
   },
   "/swagger": {
-    "target": "http://localhost:5000",
-    "secure": false,
-    "changeOrigin": true
+    "target": "https://api.etudereussie.ca",
+    "secure": true,
+    "changeOrigin": true,
+    "logLevel": "debug"
   }
 }
