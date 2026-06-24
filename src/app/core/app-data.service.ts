@@ -3,6 +3,7 @@ import { firstValueFrom } from 'rxjs';
 import { AppState, initialState } from './mock-data';
 import { AppDocument, BillingDocument, BillingPreview, BillingSessionLine, FollowUp, Homework, Payment, PaymentStatus, RequestStatus, Session, SessionStatus, TutorRequest, User, UserRole,ActivityLog,ActivityLogFilters, CreateActivityLogPayload} from './models';
 import { HttpClient, HttpParams } from '@angular/common/http';
+import { InactivityTimeoutService } from './inactivity-timeout.service';
 
 const STORAGE_KEY = 'etude-reussie-frontend-state-v3';
 const CURRENT_USER_KEY = 'etude-reussie-current-user-id';
@@ -26,7 +27,10 @@ export class AppDataService {
   private state: AppState = this.loadState();
   private lastBillingRequest?: { tutorId: string; studentId: string | 'all'; start: string; end: string; tutorRate?: number; parentRate?: number };
 
-  constructor(private readonly http: HttpClient) {}
+  constructor(
+    private readonly http: HttpClient,
+    private readonly inactivityTimeoutService: InactivityTimeoutService
+  ) {}
 
   async initialize(): Promise<void> {
     await this.reloadFromBackend();
@@ -43,6 +47,7 @@ async login(email: string, password: string): Promise<User | undefined> {
 
     localStorage.setItem(TOKEN_STORAGE_KEY, response.token);
     localStorage.setItem('etude-reussie-user', JSON.stringify(response.user));
+    this.inactivityTimeoutService.start();
 
     sessionStorage.removeItem(IMPERSONATOR_USER_KEY);
     sessionStorage.removeItem(IMPERSONATION_RETURN_URL_KEY);
@@ -1491,5 +1496,7 @@ logout(): void {
 
   localStorage.removeItem(TOKEN_STORAGE_KEY);
   localStorage.removeItem('etude-reussie-user');
+
+  this.inactivityTimeoutService.stop();
 }
 }
