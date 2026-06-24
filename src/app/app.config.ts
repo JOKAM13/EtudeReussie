@@ -7,11 +7,18 @@ import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { routes } from './app.routes';
 import { AppDataService } from './core/app-data.service';
 import { authInterceptor } from './core/auth.interceptor';
+import { InactivityTimeoutService } from './core/inactivity-timeout.service';
 
 registerLocaleData(localeFr);
 
 function initializeApplication(data: AppDataService): () => Promise<void> {
   return () => data.initialize();
+}
+
+function initializeInactivityTimeout(
+  inactivityTimeoutService: InactivityTimeoutService
+): () => void {
+  return () => inactivityTimeoutService.init();
 }
 
 export const appConfig: ApplicationConfig = {
@@ -24,6 +31,13 @@ export const appConfig: ApplicationConfig = {
       provide: APP_INITIALIZER,
       useFactory: initializeApplication,
       deps: [AppDataService],
+      multi: true
+    },
+
+    {
+      provide: APP_INITIALIZER,
+      useFactory: initializeInactivityTimeout,
+      deps: [InactivityTimeoutService],
       multi: true
     },
 

@@ -14,8 +14,7 @@ const INACTIVITY_MESSAGE_KEY = 'etude-reussie-logout-message';
   providedIn: 'root'
 })
 export class InactivityTimeoutService {
-  //private readonly timeoutDuration = 60 * 60 * 1000; // 1 heure
-  private readonly timeoutDuration = 1 * 60 * 1000; // 1 minute
+  private readonly timeoutDuration = 60 * 1000; // 1 minute
   private timeoutId: ReturnType<typeof setTimeout> | null = null;
 
   private readonly activityEvents = [
