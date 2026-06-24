@@ -87,20 +87,20 @@ export class InactivityTimeoutService {
     return !!localStorage.getItem(TOKEN_STORAGE_KEY);
   }
 
-  private logoutForInactivity(): void {
-    console.log('[InactivityTimeout] Déconnexion automatique');
+private logoutForInactivity(): void {
+  console.log('[InactivityTimeout] Déconnexion automatique');
 
-    localStorage.removeItem(TOKEN_STORAGE_KEY);
-    localStorage.removeItem(USER_STORAGE_KEY);
+  localStorage.removeItem(TOKEN_STORAGE_KEY);
+  localStorage.removeItem(USER_STORAGE_KEY);
 
-    sessionStorage.removeItem(CURRENT_USER_KEY);
-    sessionStorage.removeItem(IMPERSONATOR_USER_KEY);
-    sessionStorage.removeItem(IMPERSONATION_RETURN_URL_KEY);
+  sessionStorage.removeItem(CURRENT_USER_KEY);
+  sessionStorage.removeItem(IMPERSONATOR_USER_KEY);
+  sessionStorage.removeItem(IMPERSONATION_RETURN_URL_KEY);
 
-    this.stop();
+  this.stop();
 
-    this.timeoutMessage$.next(
-      'Votre session a expiré après une période d’inactivité. Veuillez vous reconnecter pour continuer.'
-    );
-  }
+  alert('Vous avez été déconnecté après une période d’inactivité. Veuillez vous reconnecter.');
+
+  this.router.navigate(['/login']);
+}
 }
