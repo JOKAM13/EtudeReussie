@@ -9,6 +9,8 @@ const CURRENT_USER_KEY = 'etude-reussie-current-user-id';
 const API_BASE_URL = 'https://api.etudereussie.ca/api';
 const IMPERSONATOR_USER_KEY = 'etude-reussie-impersonator-user-id';
 const IMPERSONATION_RETURN_URL_KEY = 'etude-reussie-impersonation-return-url';
+const TOKEN_STORAGE_KEY = 'etude-reussie-token';
+
 const emptyState: AppState = {
   users: [],
   requests: [],
@@ -39,15 +41,18 @@ async login(email: string, password: string): Promise<User | undefined> {
       )
     );
 
+    localStorage.setItem(TOKEN_STORAGE_KEY, response.token);
+    localStorage.setItem('etude-reussie-user', JSON.stringify(response.user));
+
     sessionStorage.removeItem(IMPERSONATOR_USER_KEY);
     sessionStorage.removeItem(IMPERSONATION_RETURN_URL_KEY);
 
     sessionStorage.setItem(CURRENT_USER_KEY, response.user.id);
 
-    await this.reloadFromBackend();
-
     this.upsertUser(response.user);
     this.save();
+
+    await this.reloadFromBackend();
 
     sessionStorage.setItem(CURRENT_USER_KEY, response.user.id);
 
@@ -1483,6 +1488,8 @@ logout(): void {
   sessionStorage.removeItem(CURRENT_USER_KEY);
   sessionStorage.removeItem(IMPERSONATOR_USER_KEY);
   sessionStorage.removeItem(IMPERSONATION_RETURN_URL_KEY);
-  localStorage.removeItem('etude-reussie-admin-token');
+
+  localStorage.removeItem(TOKEN_STORAGE_KEY);
+  localStorage.removeItem('etude-reussie-user');
 }
 }
