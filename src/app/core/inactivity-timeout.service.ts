@@ -14,7 +14,7 @@ const IMPERSONATION_RETURN_URL_KEY = 'etude-reussie-impersonation-return-url';
 })
 export class InactivityTimeoutService {
   // TEST : 1 minute
-  private readonly timeoutDuration = 60 * 60 * 1000;
+  private readonly timeoutDuration = 60 * 1000;
 
   // PRODUCTION APRÈS TEST :
   // private readonly timeoutDuration = 60 * 60 * 1000;
