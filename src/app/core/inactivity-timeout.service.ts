@@ -1,5 +1,6 @@
 import { Injectable, NgZone } from '@angular/core';
 import { Router } from '@angular/router';
+import { BehaviorSubject } from 'rxjs';
 
 const TOKEN_STORAGE_KEY = 'etude-reussie-token';
 const USER_STORAGE_KEY = 'etude-reussie-user';
@@ -8,14 +9,19 @@ const CURRENT_USER_KEY = 'etude-reussie-current-user-id';
 const IMPERSONATOR_USER_KEY = 'etude-reussie-impersonator-user-id';
 const IMPERSONATION_RETURN_URL_KEY = 'etude-reussie-impersonation-return-url';
 
-const INACTIVITY_MESSAGE_KEY = 'etude-reussie-logout-message';
-
 @Injectable({
   providedIn: 'root'
 })
 export class InactivityTimeoutService {
-  private readonly timeoutDuration = 60 * 1000; // 1 minute
+  // TEST : 1 minute
+  private readonly timeoutDuration = 60 * 1000;
+
+  // PRODUCTION APRÈS TEST :
+  // private readonly timeoutDuration = 60 * 60 * 1000;
+
   private timeoutId: ReturnType<typeof setTimeout> | null = null;
+
+  readonly timeoutMessage$ = new BehaviorSubject<string | null>(null);
 
   private readonly activityEvents = [
     'mousemove',
@@ -32,6 +38,8 @@ export class InactivityTimeoutService {
   ) {}
 
   init(): void {
+    console.log('[InactivityTimeout] Service initialisé');
+
     this.zone.runOutsideAngular(() => {
       this.activityEvents.forEach((eventName) => {
         window.addEventListener(eventName, () => this.resetTimer(), true);
@@ -42,6 +50,7 @@ export class InactivityTimeoutService {
   }
 
   start(): void {
+    console.log('[InactivityTimeout] Minuteur démarré après login');
     this.resetTimer();
   }
 
@@ -52,6 +61,11 @@ export class InactivityTimeoutService {
     }
   }
 
+  closePopupAndRedirect(): void {
+    this.timeoutMessage$.next(null);
+    this.router.navigate(['/login']);
+  }
+
   private resetTimer(): void {
     if (!this.isUserLoggedIn()) {
       this.stop();
@@ -59,6 +73,8 @@ export class InactivityTimeoutService {
     }
 
     this.stop();
+
+    console.log('[InactivityTimeout] Timer réinitialisé');
 
     this.timeoutId = setTimeout(() => {
       this.zone.run(() => {
@@ -72,6 +88,8 @@ export class InactivityTimeoutService {
   }
 
   private logoutForInactivity(): void {
+    console.log('[InactivityTimeout] Déconnexion automatique');
+
     localStorage.removeItem(TOKEN_STORAGE_KEY);
     localStorage.removeItem(USER_STORAGE_KEY);
 
@@ -79,13 +97,10 @@ export class InactivityTimeoutService {
     sessionStorage.removeItem(IMPERSONATOR_USER_KEY);
     sessionStorage.removeItem(IMPERSONATION_RETURN_URL_KEY);
 
-    sessionStorage.setItem(
-      INACTIVITY_MESSAGE_KEY,
-      'Vous avez été déconnecté après 1 heure d’inactivité.'
+    this.stop();
+
+    this.timeoutMessage$.next(
+      'Votre session a expiré après une période d’inactivité. Veuillez vous reconnecter pour continuer.'
     );
-
-    alert('Vous avez été déconnecté après 1 heure d’inactivité.');
-
-    this.router.navigate(['/login']);
   }
 }
