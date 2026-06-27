@@ -57,14 +57,24 @@ import { StatusBadgeComponent } from '../../shared/status-badge.component';
 })
 export class TutorRequestsComponent {
   tutor = this.data.getTutor();
-  requests = this.data.getAvailableRequestsForTutor(this.tutor.id);
+  requests: TutorRequest[] = [];
   selectedRequest?: TutorRequest;
 
-  constructor(public readonly data: AppDataService) {}
+  constructor(public readonly data: AppDataService) {
+    this.refreshRequests();
+  }
 
-  assign(request: TutorRequest): void {
-    this.data.assignRequest(request.id, this.tutor.id);
+  refreshRequests(): void {
     this.requests = this.data.getAvailableRequestsForTutor(this.tutor.id);
+
+    console.log('[TutorRequests] Tuteur:', this.tutor);
+    console.log('[TutorRequests] Demandes disponibles:', this.requests);
+  }
+
+  async assign(request: TutorRequest): Promise<void> {
+    await this.data.assignRequest(request.id, this.tutor.id);
+
+    this.refreshRequests();
     this.selectedRequest = undefined;
   }
 }
