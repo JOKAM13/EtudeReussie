@@ -234,25 +234,23 @@ private requireCurrentUserRole(role: UserRole): User {
     return this.followUps.filter((followUp) => followUp.parentId === parentId || ids.includes(followUp.studentId));
   }
 
-  getAvailableRequestsForTutor(tutorId: string): TutorRequest[] {
-    const tutor = this.getUser(tutorId);
+ getAvailableRequestsForTutor(_tutorId: string): TutorRequest[] {
+  return this.state.requests
+    .filter((request) => {
+      const status = (request.status ?? '').trim();
 
-    if (!tutor) {
-      return [];
-    }
-
-    return this.state.requests
-      .filter((request) =>
-        ['Nouvelle', 'Disponible'].includes(request.status) &&
+      return (
+        ['Nouvelle', 'Disponible'].includes(status) &&
         !request.assignedTutorId
-      )
-      .sort((a, b) => {
-        const dateA = new Date(a.createdAt ?? '').getTime();
-        const dateB = new Date(b.createdAt ?? '').getTime();
+      );
+    })
+    .sort((a, b) => {
+      const dateA = new Date(a.createdAt ?? '').getTime();
+      const dateB = new Date(b.createdAt ?? '').getTime();
 
-        return dateB - dateA;
-      });
-  }
+      return dateB - dateA;
+    });
+}
 
   addUser(payload: Omit<User, 'id'>): User {
     const created: User = { ...payload, id: `${payload.role}-${Date.now()}` };
