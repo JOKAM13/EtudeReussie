@@ -236,11 +236,22 @@ private requireCurrentUserRole(role: UserRole): User {
 
   getAvailableRequestsForTutor(tutorId: string): TutorRequest[] {
     const tutor = this.getUser(tutorId);
-    if (!tutor) return [];
-    const subjects = tutor.subjects ?? [];
-    return this.state.requests.filter((request) =>
-      ['Nouvelle', 'Disponible'].includes(request.status) && (subjects.length === 0 || subjects.includes(request.subject))
-    );
+
+    if (!tutor) {
+      return [];
+    }
+
+    return this.state.requests
+      .filter((request) =>
+        ['Nouvelle', 'Disponible'].includes(request.status) &&
+        !request.assignedTutorId
+      )
+      .sort((a, b) => {
+        const dateA = new Date(a.createdAt ?? '').getTime();
+        const dateB = new Date(b.createdAt ?? '').getTime();
+
+        return dateB - dateA;
+      });
   }
 
   addUser(payload: Omit<User, 'id'>): User {
