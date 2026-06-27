@@ -61,7 +61,7 @@ async login(email: string, password: string): Promise<User | undefined> {
 
     sessionStorage.setItem(CURRENT_USER_KEY, response.user.id);
 
-    console.log('Utilisateur connecté frontend :', response.user);
+    console.log('Utilisateur connecté frontendddddd :', response.user);
 
     return response.user;
   } catch (error) {
