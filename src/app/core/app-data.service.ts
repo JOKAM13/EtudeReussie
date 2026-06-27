@@ -235,13 +235,15 @@ private requireCurrentUserRole(role: UserRole): User {
   }
 
  getAvailableRequestsForTutor(_tutorId: string): TutorRequest[] {
-  return this.state.requests
+    console.log('[AppDataService] debuttttttttttttt', this.state.requests);
+  const requests = this.state.requests
     .filter((request) => {
       const status = (request.status ?? '').trim();
+      const assignedTutorId = request.assignedTutorId ?? null;
 
       return (
         ['Nouvelle', 'Disponible'].includes(status) &&
-        !request.assignedTutorId
+        assignedTutorId === null
       );
     })
     .sort((a, b) => {
@@ -250,6 +252,11 @@ private requireCurrentUserRole(role: UserRole): User {
 
       return dateB - dateA;
     });
+
+  console.log('[AppDataService] Toutes les demandes:', this.state.requests);
+  console.log('[AppDataService] Demandes disponibles filtrées:', requests);
+
+  return requests;
 }
 
   addUser(payload: Omit<User, 'id'>): User {

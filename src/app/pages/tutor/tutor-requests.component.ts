@@ -122,7 +122,12 @@ export class TutorRequestsComponent {
   constructor(public readonly data: AppDataService) {}
 
   get requests(): TutorRequest[] {
-    return this.data.getAvailableRequestsForTutor(this.tutor.id);
+    const result = this.data.getAvailableRequestsForTutor(this.tutor.id);
+
+    console.log('[TutorRequestsComponent] Tuteur connecté:', this.tutor);
+    console.log('[TutorRequestsComponent] Demandes affichées:', result);
+
+    return result;
   }
 
   async assign(request: TutorRequest): Promise<void> {
