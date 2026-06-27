@@ -115,28 +115,19 @@ import { StatusBadgeComponent } from '../../shared/status-badge.component';
     </div>
   `
 })
-export class TutorRequestsComponent implements OnInit {
+export class TutorRequestsComponent {
   tutor = this.data.getTutor();
-  requests: TutorRequest[] = [];
   selectedRequest?: TutorRequest;
 
   constructor(public readonly data: AppDataService) {}
 
-  ngOnInit(): void {
-    this.refreshRequests();
-  }
-
-  refreshRequests(): void {
-    this.requests = this.data.getAvailableRequestsForTutor(this.tutor.id);
-
-    console.log('[TutorRequests] Tuteur:', this.tutor);
-    console.log('[TutorRequests] Demandes disponibles:', this.requests);
+  get requests(): TutorRequest[] {
+    return this.data.getAvailableRequestsForTutor(this.tutor.id);
   }
 
   async assign(request: TutorRequest): Promise<void> {
     await this.data.assignRequest(request.id, this.tutor.id);
 
-    this.refreshRequests();
     this.selectedRequest = undefined;
   }
 }
