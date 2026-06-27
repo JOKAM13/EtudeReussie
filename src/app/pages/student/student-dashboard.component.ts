@@ -100,26 +100,27 @@ export class StudentDashboardComponent {
 
   tutorName(session: Session): string { return this.data.getDisplayName(session.tutorId); }
 
-  get myTutors() {
-  const currentUser = this.data.getCurrentUser();
+get myTutors() {
+  const tutors = new Map<string, NonNullable<ReturnType<AppDataService['getUser']>>>();
 
-  if (!currentUser) {
-    return [];
+  const assignedTutor = this.data.getTutorForStudent(this.student.id);
+
+  if (assignedTutor) {
+    tutors.set(assignedTutor.id, assignedTutor);
   }
 
-  const tutorIds = new Set(
-    this.data.sessions
-      .filter((session) => {
-        return session.studentId === currentUser.id;
-      })
-      .map((session) => session.tutorId)
-      .filter((tutorId) => !!tutorId)
-  );
+  this.data.sessions
+    .filter((session) => session.studentId === this.student.id)
+    .map((session) => session.tutorId)
+    .filter((tutorId): tutorId is string => !!tutorId)
+    .forEach((tutorId) => {
+      const tutor = this.data.getUser(tutorId);
 
-  return Array.from(tutorIds)
-    .map((tutorId) => this.data.getUser(tutorId))
-    .filter((user): user is NonNullable<typeof user> => {
-      return !!user && user.role === 'tuteur';
+      if (tutor && tutor.role === 'tuteur') {
+        tutors.set(tutor.id, tutor);
+      }
     });
+
+  return Array.from(tutors.values());
 }
 }
