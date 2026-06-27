@@ -119,11 +119,13 @@ export class TutorRequestsComponent {
   tutor = this.data.getTutor();
   selectedRequest?: TutorRequest;
 
-  constructor(public readonly data: AppDataService) {}
-
+  constructor(public readonly data: AppDataService) {
+     console.log('✅ JE SUIS DANS LE BON TutorRequestsComponent');
+  }
+    
   get requests(): TutorRequest[] {
     const result = this.data.getAvailableRequestsForTutor(this.tutor.id);
-
+    console.log('[TutorRequestsComponent] Demandes affichées:', result);
     console.log('[TutorRequestsComponent] Tuteur connecté:', this.tutor);
     console.log('[TutorRequestsComponent] Demandes affichées:', result);
 
