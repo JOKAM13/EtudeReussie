@@ -8,27 +8,73 @@ import { StatusBadgeComponent } from '../../shared/status-badge.component';
   standalone: true,
   imports: [CommonModule, StatusBadgeComponent],
   template: `
-    <div class="page-intro"><div><h2>Assignations</h2><p>Associez les demandes de tutorat aux tuteurs disponibles selon la matière, le niveau, la ville, le mode et les disponibilités.</p></div></div>
+    <div class="page-intro">
+      <div>
+        <h2>Assignations</h2>
+        <p>
+          Associez les demandes de tutorat aux tuteurs disponibles selon la matière,
+          le niveau, la ville, le mode et les disponibilités.
+        </p>
+      </div>
+    </div>
 
     <section class="card">
       <div class="table-wrap">
         <table>
-          <thead><tr><th>Élève</th><th>Matière</th><th>Niveau</th><th>Mode</th><th>Statut</th><th>Tuteur assigné</th><th>Assigner</th><th>Actions</th></tr></thead>
+          <thead>
+            <tr>
+              <th>Élève</th>
+              <th>Matière</th>
+              <th>Niveau</th>
+              <th>Mode</th>
+              <th>Statut</th>
+              <th>Tuteur assigné</th>
+              <th>Assigner</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+
           <tbody>
-            <tr *ngFor="let request of requests">
-              <td><strong>{{ request.studentName }}</strong><br><span class="meta">{{ request.city }}</span></td>
+            <tr *ngFor="let request of data.requests">
+              <td>
+                <strong>{{ request.studentName }}</strong><br>
+                <span class="meta">{{ request.city }}</span>
+              </td>
+
               <td>{{ request.subject }}</td>
               <td>{{ request.level }} {{ request.grade }}</td>
               <td>{{ request.mode }}</td>
-              <td><app-status-badge [value]="request.status" /></td>
-              <td>{{ request.assignedTutorId ? data.getDisplayName(request.assignedTutorId) : 'Non assignée' }}</td>
+
+              <td>
+                <app-status-badge [value]="request.status" />
+              </td>
+
+              <td>
+                {{ request.assignedTutorId ? data.getDisplayName(request.assignedTutorId) : 'Non assignée' }}
+              </td>
+
               <td>
                 <select #tutorSelect [value]="request.assignedTutorId || ''">
                   <option value="">Choisir un tuteur</option>
-                  <option *ngFor="let tutor of compatibleTutors(request.subject)" [value]="tutor.id">{{ tutor.firstName }} {{ tutor.lastName }} · {{ tutor.subjects?.join(', ') }}</option>
+
+                  <option *ngFor="let tutor of tutors" [value]="tutor.id">
+                    {{ tutor.firstName }} {{ tutor.lastName }}
+                    <span *ngIf="tutor.subjects?.length">
+                      · {{ tutor.subjects?.join(', ') }}
+                    </span>
+                  </option>
                 </select>
               </td>
-              <td class="actions"><button class="btn primary" (click)="assign(request.id, tutorSelect.value)">Assigner</button><button class="btn danger" (click)="remove(request.id)">Retirer</button></td>
+
+              <td class="actions">
+                <button class="btn primary" (click)="assign(request.id, tutorSelect.value)">
+                  Assigner
+                </button>
+
+                <button class="btn danger" (click)="remove(request.id)">
+                  Retirer
+                </button>
+              </td>
             </tr>
           </tbody>
         </table>
@@ -37,22 +83,23 @@ import { StatusBadgeComponent } from '../../shared/status-badge.component';
   `
 })
 export class AdminAssignmentsComponent {
-  requests = this.data.requests;
-  tutors = this.data.getUsersByRole('tuteur');
   constructor(public readonly data: AppDataService) {}
 
-  compatibleTutors(subject: string) {
-    return this.tutors.filter((tutor) => tutor.status === 'Actif' && (!tutor.subjects?.length || tutor.subjects.includes(subject)));
+  get tutors() {
+    return this.data.getUsersByRole('tuteur').filter((tutor) =>
+      tutor.status?.toLowerCase() === 'actif'
+    );
   }
 
-  assign(requestId: string, tutorId: string): void {
-    if (!tutorId) return;
-    this.data.assignRequest(requestId, tutorId);
-    this.requests = this.data.requests;
+  async assign(requestId: string, tutorId: string): Promise<void> {
+    if (!tutorId) {
+      return;
+    }
+
+    await this.data.assignRequest(requestId, tutorId);
   }
 
-  remove(requestId: string): void {
-    this.data.removeAssignment(requestId);
-    this.requests = this.data.requests;
+  async remove(requestId: string): Promise<void> {
+    await this.data.removeAssignment(requestId);
   }
 }
