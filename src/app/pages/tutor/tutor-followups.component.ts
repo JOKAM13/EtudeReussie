@@ -36,7 +36,11 @@ import { StatusBadgeComponent } from '../../shared/status-badge.component';
           <label>Participation<select formControlName="participation"><option>Faible</option><option>Moyenne</option><option>Bonne</option><option>Excellente</option></select></label>
           <p class="error full" *ngIf="errorMessage">{{ errorMessage }}</p>
           <p class="success-message full" *ngIf="message">{{ message }}</p>
-          <div class="actions full"><button class="btn ghost" type="button" (click)="saveDraft()">Enregistrer brouillon</button><button class="btn primary" type="button" (click)="sendFollowUp()">Envoyer au parent</button></div>
+         <div class="actions full">
+          <button class="btn primary" type="button" (click)="sendFollowUp()">
+            Envoyer au parent
+          </button>
+        </div>
         </form>
       </section>
 
