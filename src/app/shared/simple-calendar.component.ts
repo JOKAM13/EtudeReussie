@@ -41,7 +41,13 @@ interface CalendarDay {
             [class]="'event-chip ' + statusCss(session.status)"
             *ngFor="let session of day.sessions"
             (click)="selectedSession = session">
-            {{ session.startTime }} {{ session.subject }}<br>
+           {{ session.startTime }} {{ session.subject }}<br>
+
+            <span *ngIf="showStudentName">
+              Élève : {{ studentName(session) }}<br>
+            </span>
+
+            <span>{{ actorLabel }} : {{ actorName(session) }}</span>
             <span>{{ actorLabel }} : {{ actorName(session) }}</span>
           </button>
         </div>
@@ -52,7 +58,10 @@ interface CalendarDay {
           <div class="list-item" *ngFor="let session of sortedSessions">
             <div>
               <strong>{{ session.subject }} · {{ session.date | date:'d MMMM yyyy':'':'fr' }}</strong>
-              <div class="meta">{{ session.startTime }} – {{ session.endTime }} · {{ actorLabel }} : {{ actorName(session) }} · {{ session.mode }}</div>
+              <div class="meta">
+              <span *ngIf="showStudentName">Élève : {{ studentName(session) }} · </span>
+              {{ session.startTime }} – {{ session.endTime }} · {{ actorLabel }} : {{ actorName(session) }} · {{ session.mode }}
+            </div>
             </div>
             <div class="actions">
               <app-status-badge [value]="session.status" />
@@ -77,7 +86,16 @@ interface CalendarDay {
           <button type="button" class="btn ghost" (click)="selectedSession = undefined">Fermer</button>
         </div>
         <div class="grid grid-2">
-          <div class="detail-panel"><strong>{{ actorLabel }}</strong><br>{{ actorName(selectedSession) }}</div>
+          <div class="grid grid-2">
+          <div class="detail-panel" *ngIf="showStudentName">
+            <strong>Élève concerné</strong><br>
+            {{ studentName(selectedSession) }}
+          </div>
+
+          <div class="detail-panel">
+            <strong>{{ actorLabel }}</strong><br>
+            {{ actorName(selectedSession) }}
+          </div>
           <div class="detail-panel"><strong>Horaire</strong><br>{{ selectedSession.startTime }} – {{ selectedSession.endTime }}</div>
           <div class="detail-panel"><strong>Mode</strong><br>{{ selectedSession.mode }}</div>
           <div class="detail-panel"><strong>Statut</strong><br><app-status-badge [value]="selectedSession.status" /></div>
@@ -102,6 +120,7 @@ export class SimpleCalendarComponent {
   @Input() sessions: Session[] = [];
   @Input() actorLabel: 'Tuteur' | 'Élève' = 'Tuteur';
   @Input() showActions = false;
+  @Input() showStudentName = false;
   @Output() statusChange = new EventEmitter<{ session: Session; status: SessionStatus }>();
 
   currentMonth = new Date();
@@ -141,6 +160,9 @@ export class SimpleCalendarComponent {
   
  tutorName(session: Session): string {
   return this.data.getDisplayName(session.tutorId);
+}
+studentName(session: Session): string {
+  return this.data.getDisplayName(session.studentId);
 }
   actorName(session: Session): string {
     return this.actorLabel === 'Tuteur' ? this.data.getDisplayName(session.tutorId) : this.data.getDisplayName(session.studentId);
