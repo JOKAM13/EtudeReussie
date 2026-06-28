@@ -46,8 +46,6 @@ interface CalendarDay {
             <span *ngIf="showStudentName">
               Élève : {{ studentName(session) }}<br>
             </span>
-
-            <span>{{ actorLabel }} : {{ actorName(session) }}</span>
             <span>{{ actorLabel }} : {{ actorName(session) }}</span>
           </button>
         </div>
@@ -120,7 +118,7 @@ export class SimpleCalendarComponent {
   @Input() sessions: Session[] = [];
   @Input() actorLabel: 'Tuteur' | 'Élève' = 'Tuteur';
   @Input() showActions = false;
-  @Input() showStudentName = false;
+  @Input() showStudentName = true;
   @Output() statusChange = new EventEmitter<{ session: Session; status: SessionStatus }>();
 
   currentMonth = new Date();
