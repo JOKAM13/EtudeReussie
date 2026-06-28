@@ -115,7 +115,6 @@ export class TutorFollowupsComponent {
     this.parent = this.selectedStudent ? this.data.getParentForStudent(this.selectedStudent.id) : undefined;
   }
 
-  saveDraft(): void { this.createFollowUp('Brouillon'); }
   sendFollowUp(): void { this.createFollowUp('Envoyé'); }
 
   private createFollowUp(status: FollowUp['status']): void {
